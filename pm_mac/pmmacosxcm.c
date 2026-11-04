@@ -275,7 +275,7 @@ static void read_callback(const MIDIPacketList *newPackets, PmInternal *midi)
     
     /* synchronize time references every 100ms */
     now = (*midi->time_proc)(midi->time_info);
-    if (midi->first_message || midi->sync_time + 100 /*ms*/ < now) {
+    if (midi->first_message || (uint32_t)(now - (uint32_t)midi->sync_time) >= 100) {
         /* time to resync */
         now = midi_synchronize(midi);
         midi->first_message = FALSE;
@@ -310,8 +310,8 @@ static void read_callback(const MIDIPacketList *newPackets, PmInternal *midi)
             timestamp = now;
         } else {
             timestamp = (PmTimestamp) /* explicit conversion */ (
-                (AudioConvertHostTimeToNanos(packet->timeStamp) - info->delta) /
-                (UInt64) 1000000);
+                ((int64_t) AudioConvertHostTimeToNanos(packet->timeStamp) - (int64_t) info->delta) /
+                (int64_t) 1000000);
         }
         pm_read_bytes(midi, packet->data, packet->length, timestamp);
         packet = MIDIPacketNext(packet);
